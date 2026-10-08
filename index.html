@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RainVolt live model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F2F6F7;--surface:#FFFFFF;--ink:#0D2B38;--ink-2:#46606C;--water:#1A78A0;--water-soft:#D6EBF3;--copper:#B8621B;--copper-soft:#F6E3D0;--line:#C4D5DC;--on-water:#FFFFFF;--head:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;--body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0C1F29;--surface:#13303D;--ink:#E6F1F5;--ink-2:#9DB6C2;--water:#4FB3DA;--water-soft:#16414F;--copper:#E39A55;--copper-soft:#3A2A1B;--line:#27495A;--on-water:#062733}}
+:root[data-theme="dark"]{--bg:#0C1F29;--surface:#13303D;--ink:#E6F1F5;--ink-2:#9DB6C2;--water:#4FB3DA;--water-soft:#16414F;--copper:#E39A55;--copper-soft:#3A2A1B;--line:#27495A;--on-water:#062733}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--body)}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 48px}
+h1{font:500 clamp(30px,6vw,52px)/1.05 var(--head);margin:0 0 10px;letter-spacing:-0.01em}
+.intro{margin:0 0 28px;color:var(--ink-2);max-width:60ch}
+.stage{display:grid;grid-template-columns:minmax(0,1fr);gap:32px}
+@media (min-width:900px){.stage{grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:56px;align-items:start}}
+svg{display:block;width:100%;max-width:420px;margin:0 auto;height:auto}
+.pipe{fill:var(--water)}
+.flow{fill:none;stroke:var(--bg);stroke-width:2;stroke-dasharray:3 9;stroke-linecap:round;opacity:0;transition:opacity .3s}
+.cu{fill:var(--copper-soft);stroke:var(--copper);stroke-width:1}
+.cu.lit{stroke-width:3}
+.rc{fill:none;stroke:var(--copper);stroke-width:1}
+.rotor{transform-box:fill-box;transform-origin:center}
+.rotor line{stroke:var(--copper);stroke-width:3;stroke-linecap:round}
+.roof{fill:var(--ink-2);opacity:.55}
+.tank{fill:var(--water-soft);stroke:var(--water);stroke-width:1}
+#tankW{fill:var(--water);opacity:.55}
+#batFill{fill:var(--copper)}
+.trk{fill:var(--line)}
+.wire{fill:none;stroke:var(--copper);stroke-width:1.5;stroke-dasharray:4 4;transition:opacity .3s}
+.rain line{stroke:var(--water);stroke-width:1.5;stroke-linecap:round}
+.lb{font:400 12px var(--body);fill:var(--ink-2)}
+.tx{font:500 13px var(--body);fill:var(--ink)}
+.valve{fill:var(--copper-soft);stroke:var(--copper);stroke-width:1.5}
+@media (prefers-reduced-motion:no-preference){
+.flow,.wire{animation:dash .8s linear infinite}
+.rotor{animation:spin 1.6s linear infinite}
+.rain line{animation:drip .9s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-12}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes drip{from{transform:translateY(-6px);opacity:0}30%{opacity:1}to{transform:translateY(10px);opacity:0}}
+}
+.ctl{margin-bottom:18px}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.row label{font-weight:500}
+.row output{font:500 18px var(--head);color:var(--water)}
+input[type=range]{width:100%;accent-color:var(--water);height:32px;margin:4px 0 0}
+.toggles{display:flex;flex-wrap:wrap;gap:12px 24px;margin:6px 0 20px}
+.toggles label{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
+.toggles input{width:20px;height:20px;accent-color:var(--water)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
+.btn{font:500 15px var(--body);padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;min-height:44px}
+.btn[aria-pressed=true]{background:var(--water);border-color:var(--water);color:var(--on-water)}
+.btn:focus-visible,input:focus-visible{outline:3px solid var(--copper);outline-offset:2px}
+.speed{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:22px}
+.speed span{color:var(--ink-2);font-size:14px;margin-right:4px}
+.status{margin:0 0 18px;padding:12px 14px;border-left:4px solid var(--copper);background:var(--surface);border-radius:0}
+.read{display:grid;grid-template-columns:1fr 1fr;gap:0 28px;margin:0}
+.read div{padding:10px 0;border-bottom:1px solid var(--line)}
+.read dt{font-size:13px;color:var(--ink-2)}
+.read dd{margin:0;font:500 clamp(20px,3.4vw,26px)/1.2 var(--head)}
+.note{margin:22px 0 0;font-size:14px;color:var(--ink-2);max-width:60ch}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>RainVolt live model</h1>
+<p class="intro">Change the rain, the roof size, or the drop height. Watch water and power move through the prototype: roof, splitter, micro-turbine, battery, and tank.</p>
+
+<div class="stage">
+<svg id="rig" viewBox="0 0 360 420" role="img" aria-labelledby="rigT rigD">
+<title id="rigT">Live schematic of the rainwater micro-hydro prototype</title>
+<desc id="rigD">Rain falls on a roof into a main pipe. A splitter valve sends normal flow through a micro-turbine into a tank, and sends excess flow down a bypass pipe. The turbine drives a generator that charges a battery, which powers a home load.</desc>
+<g class="rain" id="rainG" style="opacity:0"><line x1="32" y1="8" x2="28" y2="22"/><line x1="62" y1="4" x2="58" y2="18"/><line x1="92" y1="8" x2="88" y2="22"/><line x1="122" y1="4" x2="118" y2="18"/><line x1="152" y1="8" x2="148" y2="22"/></g>
+<polygon class="roof" points="16,84 176,40 176,52 16,96"/>
+<text class="lb" x="16" y="118">Roof</text>
+
+<rect class="pipe" x="184" y="40" width="12" height="110"/>
+<rect class="pipe" x="184" y="206" width="12" height="64"/>
+<rect class="pipe" x="184" y="354" width="12" height="32"/>
+<rect class="pipe" x="196" y="84" width="134" height="12"/>
+<rect class="pipe" x="318" y="84" width="12" height="306"/>
+<line class="flow" id="f1" x1="190" y1="44" x2="190" y2="148"/>
+<line class="flow" id="f2" x1="190" y1="208" x2="190" y2="268"/>
+<line class="flow" id="f3" x1="190" y1="356" x2="190" y2="384"/>
+<path class="flow" id="f4" d="M196 90 H324 V388"/>
+<circle class="valve" cx="190" cy="90" r="8"/>
+<text class="lb" x="214" y="114">Splitter valve</text>
+<text class="lb" x="214" y="76">Bypass for heavy rain</text>
+
+<line x1="132" y1="178" x2="166" y2="178" stroke="var(--copper)" stroke-width="3"/>
+<rect class="cu" x="166" y="150" width="48" height="56" rx="6"/>
+<g id="rotor" class="rotor"><circle class="rc" cx="190" cy="178" r="17"/><line x1="190" y1="178" x2="190" y2="162"/><line x1="190" y1="178" x2="176" y2="186"/><line x1="190" y1="178" x2="204" y2="186"/></g>
+<circle cx="190" cy="178" r="3.5" fill="var(--copper)"/>
+<text class="lb" x="222" y="182">Micro-turbine</text>
+
+<rect class="cu" x="54" y="160" width="78" height="36" rx="4"/>
+<text class="tx" x="93" y="178" text-anchor="middle" dominant-baseline="central">Generator</text>
+<path class="wire" id="w1" d="M93 196 V222"/>
+<rect class="cu" x="54" y="222" width="78" height="36" rx="4"/>
+<text class="tx" x="93" y="234" text-anchor="middle" dominant-baseline="central">Battery</text>
+<rect class="trk" x="60" y="246" width="66" height="6" rx="3"/>
+<rect id="batFill" x="60" y="246" width="0" height="6" rx="3"/>
+<path class="wire" id="w2" d="M93 258 V284"/>
+<rect class="cu" id="loadBox" x="54" y="284" width="78" height="30" rx="4"/>
+<text class="tx" x="93" y="299" text-anchor="middle" dominant-baseline="central">Home load</text>
+
+<rect class="tank" x="146" y="270" width="98" height="84" rx="6"/>
+<rect id="tankW" x="148" y="352" width="94" height="0"/>
+<text class="tx" id="tankTxt" x="252" y="304">0 L</text>
+<text class="lb" id="tankFull" x="252" y="322" style="opacity:0">Full</text>
+<text class="lb" x="190" y="406" text-anchor="middle">Household use</text>
+<text class="lb" x="352" y="406" text-anchor="end">Drain or pit</text>
+</svg>
+
+<div>
+<p class="status" id="status" role="status">No rain. The turbine is idle.</p>
+
+<div class="ctl"><div class="row"><label for="rain">Rain intensity</label><output id="rainO" for="rain">50 mm/h</output></div><input type="range" id="rain" min="0" max="100" step="5" value="50"></div>
+<div class="ctl"><div class="row"><label for="area">Roof area</label><output id="areaO" for="area">100 m²</output></div><input type="range" id="area" min="20" max="300" step="10" value="100"></div>
+<div class="ctl"><div class="row"><label for="head">Drop height, roof to turbine</label><output id="headO" for="head">6 m</output></div><input type="range" id="head" min="2" max="15" step="1" value="6"></div>
+
+<div class="toggles">
+<label><input type="checkbox" id="cut"> Power cut: run 3 LED lamps (9 W)</label>
+<label><input type="checkbox" id="tap"> Use water from the tank</label>
+</div>
+
+<div class="speed" role="group" aria-label="Simulation speed"><span>Speed</span>
+<button class="btn" type="button" data-speed="60" aria-pressed="false">1 min per second</button>
+<button class="btn" type="button" data-speed="300" aria-pressed="true">5 min per second</button>
+<button class="btn" type="button" data-speed="1800" aria-pressed="false">30 min per second</button>
+</div>
+<div class="bar">
+<button class="btn" type="button" id="run" aria-pressed="false">Pause</button>
+<button class="btn" type="button" id="reset">Reset tank and battery</button>
+</div>
+
+<dl class="read">
+<div><dt>Flow from roof</dt><dd id="oIn">0.00 L/s</dd></div>
+<div><dt>Through turbine</dt><dd id="oTur">0.00 L/s</dd></div>
+<div><dt>Through bypass</dt><dd id="oByp">0.00 L/s</dd></div>
+<div><dt>Electrical power</dt><dd id="oPow">0.0 W</dd></div>
+<div><dt>Tank level</dt><dd id="oTank">0 of 1000 L</dd></div>
+<div><dt>Battery</dt><dd id="oBat">0 of 84 Wh</dd></div>
+<div><dt>Energy generated</dt><dd id="oEn">0.0 Wh</dd></div>
+<div><dt>Time elapsed</dt><dd id="oT">0 h 00 min</dd></div>
+</dl>
+<p class="note">Simplified model: 80% of rain reaches the pipe, the turbine and generator together are 50% efficient, and the turbine accepts up to 1.5 L/s before the bypass opens. Power = 9.81 × flow × head × efficiency.</p>
+</div>
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const RATED=1.5,TANK=1000,BAT=84,RUN=0.8,EFF=0.5,LOAD=9,TAP=0.25;
+const s={tank:0,bat:0,energy:0,t:0,run:true,speed:300};
+let lastMsg='';
+function inputs(){return{rain:+$('rain').value,area:+$('area').value,head:+$('head').value,cut:$('cut').checked,tap:$('tap').checked}}
+function calc(i){const inflow=i.area*i.rain*RUN/3600;const turb=Math.min(inflow,RATED);return{inflow,turb,bypass:inflow-turb,power:9.81*turb*i.head*EFF}}
+function step(dt){
+const i=inputs(),c=calc(i);
+const draw=i.tap&&s.tank>0?TAP:0;
+s.tank=Math.min(TANK,Math.max(0,s.tank+(c.turb-draw)*dt));
+const gain=c.power*dt/3600,use=i.cut?LOAD*dt/3600:0;
+s.bat=Math.min(BAT,Math.max(0,s.bat+gain-use));
+s.energy+=gain;s.t+=dt;
+}
+function render(){
+const i=inputs(),c=calc(i);
+$('rainO').textContent=i.rain+' mm/h';$('areaO').textContent=i.area+' m²';$('headO').textContent=i.head+' m';
+$('oIn').textContent=c.inflow.toFixed(2)+' L/s';
+$('oTur').textContent=c.turb.toFixed(2)+' L/s';
+$('oByp').textContent=c.bypass.toFixed(2)+' L/s';
+$('oPow').textContent=c.power.toFixed(1)+' W';
+$('oTank').textContent=Math.round(s.tank)+' of '+TANK+' L';
+$('oBat').textContent=s.bat.toFixed(1)+' of '+BAT+' Wh';
+$('oEn').textContent=s.energy.toFixed(1)+' Wh';
+const m=Math.floor(s.t/60);$('oT').textContent=Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')+' min';
+const tf=s.tank/TANK,h=80*tf;
+$('tankW').setAttribute('y',352-h);$('tankW').setAttribute('height',h);
+$('tankTxt').textContent=Math.round(s.tank)+' L';
+$('tankFull').style.opacity=s.tank>=TANK?1:0;
+$('batFill').setAttribute('width',(66*s.bat/BAT).toFixed(1));
+const rot=$('rotor');
+rot.style.animationDuration=(2.4-Math.min(1.8,c.turb*1.2)).toFixed(2)+'s';
+rot.style.animationPlayState=c.turb>0&&s.run?'running':'paused';
+$('rainG').style.opacity=i.rain>0?(0.3+0.7*i.rain/100).toFixed(2):0;
+const drawing=i.tap&&s.tank>0;
+$('f1').style.opacity=c.inflow>0?1:0;
+$('f2').style.opacity=c.turb>0?1:0;
+$('f3').style.opacity=drawing?1:0;
+$('f4').style.opacity=c.bypass>0.005?1:0;
+$('w1').style.opacity=c.power>0.05&&s.bat<BAT?1:0.2;
+const lit=i.cut&&s.bat>0;
+$('w2').style.opacity=lit?1:0.2;
+$('loadBox').classList.toggle('lit',lit);
+let msg;
+if(i.rain===0)msg='No rain. The turbine is idle.';
+else if(c.bypass>0.005)msg='Heavy rain: the bypass is carrying the excess so the turbine and tank stay safe.';
+else msg='Normal flow: all the water passes through the turbine into the tank.';
+if(s.tank>=TANK&&i.rain>0)msg+=' The tank is full and the extra runs to the drain.';
+if(i.cut)msg+=s.bat>0?' The battery is powering the lamps.':' The battery is empty, so the lamps are off.';
+if(msg!==lastMsg){$('status').textContent=msg;lastMsg=msg}
+}
+let last=performance.now();
+function frame(now){
+const dt=Math.min(0.1,(now-last)/1000);last=now;
+if(s.run)step(dt*s.speed);
+render();
+requestAnimationFrame(frame);
+}
+['rain','area','head','cut','tap'].forEach(id=>$(id).addEventListener('input',render));
+document.querySelectorAll('[data-speed]').forEach(b=>b.addEventListener('click',()=>{
+s.speed=+b.dataset.speed;
+document.querySelectorAll('[data-speed]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+}));
+$('run').addEventListener('click',e=>{s.run=!s.run;e.currentTarget.textContent=s.run?'Pause':'Resume';e.currentTarget.setAttribute('aria-pressed',String(!s.run))});
+$('reset').addEventListener('click',()=>{s.tank=0;s.bat=0;s.energy=0;s.t=0;render()});
+render();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
